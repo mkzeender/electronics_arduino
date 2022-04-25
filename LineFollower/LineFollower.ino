@@ -58,23 +58,25 @@ void allDirections() {
     // slight right
     goDirectionSpeed(0, speed_ * 0.7, speed_*0.9);
     lastDirectionLeft = 1;
-  }
+    derivativespeed -= 20;  }
   else if (lefter) {
-    goDirectionSpeed(0, constrain(derivativespeed, speed_ * 0.5, speed_*0.9), speed_);
+    goDirectionSpeed(0, constrain(derivativespeed, speed_ * 0.5, speed_), speed_*0.9);
     lastDirectionLeft = 1;
+    derivativespeed -= 5;
   }
   else if (righter and centerer) {
     goDirectionSpeed(0, speed_*0.9, speed_ * 0.7);
     lastDirectionLeft = 2;
-    derivativespeed = 0;
+    derivativespeed -= 20;
   }
   else if (righter) {
-    goDirectionSpeed(0, speed_, constrain(derivativespeed, speed_ * 0.5, speed_*0.9));
+    goDirectionSpeed(0, speed_*0.9, constrain(derivativespeed, speed_ * 0.5, speed_));
     lastDirectionLeft = 2;
+    derivativespeed -= 5;
   }
   else if (centerer) {
     goDirectionSpeed(0, speed_, speed_);
-    derivativespeed = 0;
+    derivativespeed -= 50;
   }
   else if (lastDirectionLeft == 1) {
     derivativespeed += 1;
