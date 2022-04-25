@@ -1,9 +1,16 @@
 
 // This sketch uses a HW-627 motor driver to control two motors
-  int sensitivity = 0.1;
+  float sensitivity = .1;
   int sensorCutoff = 300;
+  
+  int derivativespeed = 200;
+  float dv = 0.01;
+
+  int lastDirectionLeft = 0;
+  
   int rightSensor = A0;
   int leftSensor = A1;
+  int middleSensor = A2;
   
   int leftFor = 6;//left motor forward
   int leftRev = 9;//left motor reverse
@@ -27,24 +34,47 @@ digitalWrite (enabledrive, HIGH);   // allows the car to drive
 
 }
 
+void loop() {
+  dynamicSpeed();
+  delay(10);
+}
 
-void loop() 
-{
+void dynamicSpeed() {
   
   int left = analogRead(leftSensor);
   int right = analogRead(rightSensor);
+  int center = analogRead(middleSensor);
 
-  int direction_ = right - left;
   
-  if (left < sensorCutoff) {
-    turnRight();
+  if ((left < sensorCutoff) and (right < sensorCutoff)) {
+    
+    goStraight(); // for both lines seen at same time
+  }
+  else if (left < sensorCutoff) { // keep track of last known side that we saw the line
+    turnLeft();
+    lastDirectionLeft = 1;
   }
   else if (right < sensorCutoff) {
+    turnRight();
+    lastDirectionLeft = 2;
+  }
+  else if (center < sensorCutoff + 100) {
+    derivativespeed = derivativespeed + sensitivity * dv * (sensorCutoff - center);
+    derivativespeed = constrain(derivativespeed, 127, 255);
+    goDirectionSpeed(sensorCutoff - center, derivativespeed, derivativespeed);
+  }
+  else if (lastDirectionLeft == 1) {
+    // we know we are right of the line
     turnLeft();
   }
-  else {
-    goStraight();
+  else if (lastDirectionLeft == 2) {
+    // we know we are left of the line
+    turnRight();
   }
+
+  
+  goDirection(center-sensorCutoff);
+  
  
 //  goBack();
 //  delay (5000);
@@ -55,19 +85,21 @@ void loop()
 }
 
 void goDirection(int direction_) {
-  int left = 105;
-  int right = 127;
+  goDirectionSpeed(direction_, 140, 170);
+}
+
+void goDirectionSpeed(int direction_, int left, int right) {
   if (direction_ <= 0) {
     left = left + direction_ * sensitivity;
-    right = right + direction_ * sensitivity / 2;
+    //right = right + direction_ * sensitivity / 2;
   } else {
     right = right - direction_ * sensitivity;
-    left = left + direction_ * sensitivity / 2;
+    //left = left + direction_ * sensitivity / 2;
   }
   left = clip(left);
   right = clip(right);
   
-  digitalWrite (rightFor, right); //makes sure the right motor does not rotate forward
+  analogWrite (rightFor, right); //makes sure the right motor does not rotate forward
   digitalWrite (rightRev, LOW); //makes sure the right motor does not rotate reverse
   digitalWrite (leftRev, LOW); //makes sure the left motor does not rotate reverse
   analogWrite (leftFor, left); //using PWM allows for an adjustable speed
@@ -81,6 +113,15 @@ int clip(int input) {
     return 0;
   }
   return input;
+}
+
+void goSpeed(int speed_)
+{
+  analogWrite (rightFor, speed_); //makes sure the right motor does not rotate forward
+  digitalWrite (rightRev, LOW); //makes sure the right motor does not rotate reverse
+  digitalWrite (leftRev, LOW); //makes sure the left motor does not rotate reverse
+  analogWrite (leftFor, speed_); //using PWM allows for an adjustable speed
+  return;
 }
 
 void turnLeft()
