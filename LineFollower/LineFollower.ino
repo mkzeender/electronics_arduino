@@ -3,7 +3,7 @@
   float sensitivity = .1;
   int sensorCutoff = 300;
   
-  int derivativespeed = 200;
+  float derivativespeed = 200;
   float dv = 0.01;
 
   int lastDirectionLeft = 0;
@@ -35,8 +35,58 @@ digitalWrite (enabledrive, HIGH);   // allows the car to drive
 }
 
 void loop() {
-  dynamicSpeed();
+  allDirections();
   delay(10);
+}
+
+void allDirections() {
+  int speed_ = 170;
+  
+  int left = analogRead(leftSensor);
+  int right = analogRead(rightSensor);
+  int center = analogRead(middleSensor);
+
+  bool centerer = center < sensorCutoff;
+  bool lefter = left < sensorCutoff;
+  bool righter = right < sensorCutoff;
+
+  if (lefter and righter) {
+    goDirectionSpeed(0, 0.6 * speed_, 0.6 * speed_);
+    
+  }
+  else if (lefter and centerer) {
+    // slight right
+    goDirectionSpeed(0, speed_ * 0.7, speed_*0.9);
+    lastDirectionLeft = 1;
+  }
+  else if (lefter) {
+    goDirectionSpeed(0, constrain(derivativespeed, speed_ * 0.5, speed_*0.9), speed_);
+    lastDirectionLeft = 1;
+  }
+  else if (righter and centerer) {
+    goDirectionSpeed(0, speed_*0.9, speed_ * 0.7);
+    lastDirectionLeft = 2;
+    derivativespeed = 0;
+  }
+  else if (righter) {
+    goDirectionSpeed(0, speed_, constrain(derivativespeed, speed_ * 0.5, speed_*0.9));
+    lastDirectionLeft = 2;
+  }
+  else if (centerer) {
+    goDirectionSpeed(0, speed_, speed_);
+    derivativespeed = 0;
+  }
+  else if (lastDirectionLeft == 1) {
+    derivativespeed += 1;
+    goDirectionSpeed(0, constrain(derivativespeed, 0, speed_*0.4), speed_ * 0.7);
+    
+  }
+  else if (lastDirectionLeft == 2) {
+    derivativespeed += 1;
+    goDirectionSpeed(0, speed_ * 0.7, constrain(derivativespeed, 0, speed_*0.4));
+    
+  }
+  
 }
 
 void dynamicSpeed() {
@@ -45,35 +95,51 @@ void dynamicSpeed() {
   int right = analogRead(rightSensor);
   int center = analogRead(middleSensor);
 
+  int direction_;
+  if (center < (sensorCutoff + 300)) {
+    derivativespeed = derivativespeed + sensitivity * dv * (sensorCutoff - center);
+    derivativespeed = constrain(derivativespeed, 127, 255);
+
+    // pick which side of the line to follow
+    int direction_;
+    if (lastDirectionLeft == 1) {
+      direction_ = sensorCutoff - center;
+    }
+    else {
+      direction_ = center - sensorCutoff;
+    }
+    //goDirectionSpeed(direction_, derivativespeed, derivativespeed);
+  }
   
   if ((left < sensorCutoff) and (right < sensorCutoff)) {
     
-    goStraight(); // for both lines seen at same time
+    direction_ = 0; // for both lines seen at same time
   }
   else if (left < sensorCutoff) { // keep track of last known side that we saw the line
-    turnLeft();
+    //turnLeft();
     lastDirectionLeft = 1;
+    direction_ = -50;
   }
   else if (right < sensorCutoff) {
-    turnRight();
+    //turnRight();
+    //goDirectionSpeed(sensorCutoff - center, derivativespeed, derivativespeed);
+    direction_ = 50;
     lastDirectionLeft = 2;
   }
-  else if (center < sensorCutoff + 100) {
-    derivativespeed = derivativespeed + sensitivity * dv * (sensorCutoff - center);
-    derivativespeed = constrain(derivativespeed, 127, 255);
-    goDirectionSpeed(sensorCutoff - center, derivativespeed, derivativespeed);
-  }
+
   else if (lastDirectionLeft == 1) {
     // we know we are right of the line
-    turnLeft();
+    //turnLeft();
+    direction_ = -2000;
   }
   else if (lastDirectionLeft == 2) {
     // we know we are left of the line
-    turnRight();
+    //turnRight();
+    direction_ = 2000;
   }
 
   
-  goDirection(center-sensorCutoff);
+  goDirectionSpeed(direction_, derivativespeed, derivativespeed);
   
  
 //  goBack();
