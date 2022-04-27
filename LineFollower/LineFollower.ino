@@ -52,6 +52,36 @@ void loop() {
   delay(2);
 }
 
+void simpleAllDirections() {
+  int speed_ = 165;
+  
+  int left = analogRead(leftSensor);
+  int right = analogRead(rightSensor);
+  int center = analogRead(middleSensor);
+
+  bool centerer = center < sensorCutoff;
+  bool lefter = left < sensorCutoff;
+  bool righter = right < sensorCutoff;
+
+  if (lefter) {
+    lastDirectionLeft = 1;
+  }
+  else if (righter) {
+    lastDirectionLeft = 2;
+  }
+
+  if (centerer) {
+    goDirectionSpeed(0, speed_, speed_);
+    derivativespeed -= 50;
+  }
+  else if (lastDirectionLeft == 1) {
+    //turn left
+  }
+  else if (lastDirectionLeft == 2) {
+    //turn right
+  }
+}
+
 void allDirections() {
   int speed_ = 165;
   
