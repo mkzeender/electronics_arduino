@@ -17,6 +17,8 @@
   int rightFor = 3;//right motor forward
   int rightRev = 5;//right motor reverse
   int enabledrive = 22;  //  drive enabled (HIGH) or disabled (LOW)
+
+  int led = 13;
   
 void setup()
 {
@@ -31,16 +33,27 @@ pinMode (enabledrive, OUTPUT);
 
 digitalWrite (enabledrive, HIGH);   // allows the car to drive
 
+digitalWrite (led, HIGH);
+delay(500);
+digitalWrite (led, LOW);
+delay(500);
+
+digitalWrite (led, HIGH);
+delay(500);
+digitalWrite (led, LOW);
+delay(500);
+digitalWrite (led, HIGH);
+delay(500);
 
 }
 
 void loop() {
   allDirections();
-  delay(10);
+  delay(2);
 }
 
 void allDirections() {
-  int speed_ = 170;
+  int speed_ = 165;
   
   int left = analogRead(leftSensor);
   int right = analogRead(rightSensor);
@@ -51,43 +64,49 @@ void allDirections() {
   bool righter = right < sensorCutoff;
 
   if (lefter and righter) {
-    goDirectionSpeed(0, 0.6 * speed_, 0.6 * speed_);
+    goDirectionSpeed(0, 0.7 * speed_, 0.7 * speed_);
     
   }
   else if (lefter and centerer) {
     // slight right
     goDirectionSpeed(0, speed_ * 0.7, speed_*0.9);
     lastDirectionLeft = 1;
-    derivativespeed -= 20;  }
+    derivativespeed -= 10;
+    }
   else if (lefter) {
-    goDirectionSpeed(0, constrain(derivativespeed, speed_ * 0.5, speed_), speed_*0.9);
-    lastDirectionLeft = 1;
-    derivativespeed -= 5;
+    goDirectionSpeed(0, constrain(derivativespeed * 1.5, speed_ * 0.4, speed_), constrain(speed_ - derivativespeed, speed_ * 0.4, speed_));
+    lastDirectionLeft = 1; 
+    derivativespeed -= 8;
   }
   else if (righter and centerer) {
     goDirectionSpeed(0, speed_*0.9, speed_ * 0.7);
     lastDirectionLeft = 2;
-    derivativespeed -= 20;
+    derivativespeed -= 10;
   }
   else if (righter) {
-    goDirectionSpeed(0, speed_*0.9, constrain(derivativespeed, speed_ * 0.5, speed_));
+    goDirectionSpeed(0, constrain(speed_ - derivativespeed, speed_ * 0.4, speed_), constrain(derivativespeed * 1.5, speed_ * 0.4, speed_));
     lastDirectionLeft = 2;
-    derivativespeed -= 5;
+    derivativespeed -= 8;
   }
   else if (centerer) {
     goDirectionSpeed(0, speed_, speed_);
     derivativespeed -= 50;
   }
   else if (lastDirectionLeft == 1) {
-    derivativespeed += 1;
-    goDirectionSpeed(0, constrain(derivativespeed, 0, speed_*0.4), speed_ * 0.7);
+    derivativespeed += 0.4;
+    goDirectionSpeed(0, constrain(derivativespeed, 0, speed_*0.4), constrain(derivativespeed, speed_ * 0.7, speed_));
     
   }
   else if (lastDirectionLeft == 2) {
-    derivativespeed += 1;
-    goDirectionSpeed(0, speed_ * 0.7, constrain(derivativespeed, 0, speed_*0.4));
+    derivativespeed += 0.4;
+    goDirectionSpeed(0, constrain(derivativespeed, speed_ * 0.7, speed_), constrain(derivativespeed, 0, speed_*0.4));
     
   }
+  else {
+    goDirectionSpeed(0, speed_, speed_);
+  }
+
+  derivativespeed = constrain(derivativespeed, 0, 255);
   
 }
 
@@ -143,13 +162,7 @@ void dynamicSpeed() {
   
   goDirectionSpeed(direction_, derivativespeed, derivativespeed);
   
- 
-//  goBack();
-//  delay (5000);
-//  goFast();
-//  delay (5000);
-// goBackfast();
-//  delay(5000);
+
 }
 
 void goDirection(int direction_) {
@@ -168,9 +181,13 @@ void goDirectionSpeed(int direction_, int left, int right) {
   right = clip(right);
   
   analogWrite (rightFor, right); //makes sure the right motor does not rotate forward
-  digitalWrite (rightRev, LOW); //makes sure the right motor does not rotate reverse
-  digitalWrite (leftRev, LOW); //makes sure the left motor does not rotate reverse
+  //digitalWrite (rightRev, LOW); //makes sure the right motor does not rotate reverse
+  //digitalWrite (leftRev, LOW); //makes sure the left motor does not rotate reverse
   analogWrite (leftFor, left); //using PWM allows for an adjustable speed
+
+  if (left < 100 and right < 100) {
+    digitalWrite (led, LOW);
+  }
 }
 
 int clip(int input) {
